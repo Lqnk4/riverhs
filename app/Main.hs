@@ -3,6 +3,9 @@ module Main where
 import Riverctl
 import Prelude hiding (Left, Right)
 
+display :: String
+display = "ePD-1"
+
 term :: String
 term = "alacritty"
 
@@ -14,6 +17,9 @@ launcher = "fuzzel"
 
 fcitxToggle :: String
 fcitxToggle = "fcitx5-remote -t ; pkill -SIGRTMIN+1 waybar"
+
+customModes :: [Mode]
+customModes = [P]
 
 keymaps :: [Keymap]
 keymaps =
@@ -47,11 +53,34 @@ keymaps =
     , ([N], "M-A-C", "J", snap Down)
     , ([N], "M-A-C", "K", snap Up)
     , ([N], "M-A-C", "L", snap Right)
+    , ([N], "M", "Left", mainLocation "left")
+    , ([N], "M", "Down", mainLocation "bottom")
+    , ([N], "M", "Up", mainLocation "top")
+    , ([N], "M", "Right", mainLocation "right")
     , -- resize views
       ([N], "M-A-S", "H", resize Horizontal (-100))
     , ([N], "M-A-S", "J", resize Vertical 100)
     , ([N], "M-A-S", "K", resize Vertical (-100))
     , ([N], "M-A-S", "L", resize Horizontal 100)
+    , -- floating/fullscreen
+      ([N], "M", "Space", toggleFloat)
+    , ([N], "M", "F", toggleFullScreen)
+    , -- passthrough
+      ([N], "M", "F11", enterMode P)
+    , ([P], "M", "F11", enterMode N)
+    , -- XF86 maps
+      ([N, L], "None", "XF86AudioMute", spawn "pactl set-sink-mute @DEFAULT_SINK@ toggle")
+    , ([N, L], "None", "XF86AudioRaiseVolume", spawn "pactl set-sink-volume @DEFAULT_SINK@ +5%")
+    , ([N, L], "None", "XF86AudioLowerVolume", spawn "pactl set-sink-volume @DEFAULT_SINK@ -5%")
+    , ([N, L], "None", "XF86AudioMedia", spawn "playerctl play-pause")
+    , ([N, L], "None", "XF86AudioPlay", spawn "playerctl play-pause")
+    , ([N, L], "None", "XF86AudioPrev", spawn "playerctl previous")
+    , ([N, L], "None", "XF86AudioNext", spawn "playerctl next")
+    , -- screenshots
+      ([N], "M", "P", spawn "grim -g \"$(slurp -d)\" - | swappy -f -")
+    , ([N], "M-S", "P", spawn "grim - | swappy -f -")
+    , -- waybar
+      ([N], "M", "B", spawn "killall waybar || waybar")
     ]
 
 ptrKeymaps :: [Keymap]
@@ -59,12 +88,30 @@ ptrKeymaps =
     [ -- pointer keymaps
       ([N], "M", "BTN_LEFT", ptrMoveView)
     , ([N], "M", "BTN_RIGHT", ptrResizeView)
-    , ([N], "M", "BTN_MIDDLE", ptrToggleFloat)
+    , ([N], "M", "BTN_MIDDLE", toggleFloat)
+    ]
+
+windowRules :: [Rule]
+windowRules = 
+    [ (AppID, "bar", CSD)
+    -- , (AppID, "zen-alpha", SSD)
+    , (AppID, "org.pwmt.zathura", SSD)
+    , (AppID, "emacs", SSD)
     ]
 
 main :: IO ()
 main = do
+    declareCustomModes customModes
     setKeymaps keymaps
+    setKeymaps genTagMaps
     setPtrMaps ptrKeymaps
+    addRules windowRules
+    setRepeat 50 300
+
+    callExternal "waybar" []
+    callExternalShell "swayidle -w \
+        \ timeout 500 'swaylock -f -c 000000' \
+        \ before-sleep 'swaylock -f -c 000000'"
+
     callctl ["default-layout", "rivertile"]
-    callRiverTile ["-view-padding", "0", "-outer-padding", "0"]
+    callExternal "rivertile" ["-view-padding", "0", "-outer-padding", "0"]

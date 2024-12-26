@@ -1,27 +1,35 @@
 {-# LANGUAGE GADTs #-}
 
--- | Keymap setup
+-- | module containing riverctl configuration functions
 module Riverctl where
 
 import Control.Monad (void)
+import Data.Bits (shiftL)
 import Data.Foldable (traverse_)
 import Data.List (intercalate)
-import System.Process (createProcess, proc)
+import System.Process (createProcess, proc, shell)
 import Prelude hiding (Left, Right)
 
--- from left to right,
--- Mode, mods, lhs, rhs
+{- | from left to right,
+Mode, mods, lhs, rhs
+-}
 type Keymap = ([Mode], String, String, [String])
 
-data Mode = N | L
+type Rule = (RuleType, String, RuleAction)
+
+data Mode = N | L | P
 data Modkey = M | S | A | C | None deriving (Read)
 data View = Next | Prev
 data Direction = Left | Down | Up | Right
 data Split = Horizontal | Vertical
 
+data RuleType = AppID | Title
+data RuleAction = Float | NoFloat | SSD | CSD | Tags Int | Output String
+
 instance Show Mode where
     show N = "normal"
     show L = "locked"
+    show P = "passthrough"
 
 instance Show Modkey where
     show M = "Super"
@@ -43,6 +51,18 @@ instance Show Direction where
 instance Show Split where
     show Horizontal = "horizontal"
     show Vertical = "vertical"
+
+instance Show RuleType where
+    show AppID = "-app-id"
+    show Title = "-title"
+
+instance Show RuleAction where
+    show Float = "float"
+    show NoFloat = "no-float"
+    show SSD = "ssd"
+    show CSD = "csd"
+    show (Tags t) = "tags " ++ show t
+    show (Output s) = "output " ++ s
 
 -- | start a program
 spawn :: String -> [String]
@@ -90,6 +110,10 @@ mainRatio s = sendLayoutCmd $ "main-ratio " ++ s
 mainCount :: String -> [String]
 mainCount s = sendLayoutCmd $ "main-count " ++ s
 
+-- | change layout orientation
+mainLocation :: String -> [String]
+mainLocation s = sendLayoutCmd $ "main-location " ++ s
+
 -- | move views
 move :: Direction -> Int -> [String]
 move dir n = ["move", show dir, show n]
@@ -110,21 +134,49 @@ ptrMoveView = ["move-view"]
 ptrResizeView :: [String]
 ptrResizeView = ["resize-view"]
 
--- | toggle float with pointer
-ptrToggleFloat :: [String]
-ptrToggleFloat = ["toggle-float"]
+-- | toggle floating view
+toggleFloat :: [String]
+toggleFloat = ["toggle-float"]
+
+toggleFullScreen :: [String]
+toggleFullScreen = ["toggle-fullscreen"]
+
+enterMode :: Mode -> [String]
+enterMode mode = ["enter-mode", show mode]
+
+-- | generates mappings for tags [0..8] bound to [1..9]
+genTagMaps :: [Keymap]
+genTagMaps =
+    concat
+        [ [ ([N], "M", show x, ["set-focused-tags", tags x])
+          , ([N], "M-S", show x, ["set-view-tags", tags x])
+          , ([N], "M-C", show x, ["toggle-focused-tags", tags x])
+          , ([N], "M-S-C", show x, ["toggle-view-tags", tags x])
+          ]
+        | x <- [1 .. 9]
+        ]
+        ++ [([N], "M", "0", ["set-focused-tags", alltags]), ([N], "M-S", "0", ["set-view-tags", alltags])]
+  where
+    tags x = show $ (1 :: Int) `shiftL` (x - 1)
+    alltags = show $ ((1 :: Int) `shiftL` 32) - 1
 
 -- | call riverctl with the provided args
 callctl :: [String] -> IO ()
 callctl args = void $ createProcess (proc "riverctl" args)
 
--- | call rivertile with the provided args
-callRiverTile :: [String] -> IO ()
-callRiverTile args = void $ createProcess (proc "rivertile" args)
-
--- | call an external process
+-- | call an external process with args
 callExternal :: String -> [String] -> IO ()
 callExternal p args = void $ createProcess (proc p args)
+
+-- | call an external shell command
+callExternalShell :: String -> IO ()
+callExternalShell cmd = void $ createProcess (shell cmd)
+
+declareCustomModes :: [Mode] -> IO ()
+declareCustomModes = traverse_ declareMode
+  where
+    declareMode :: Mode -> IO ()
+    declareMode mode = callctl ["declare-mode", show mode]
 
 splitWhen :: (Char -> Bool) -> String -> [String]
 splitWhen p s = case dropWhile p s of
@@ -153,8 +205,26 @@ setPtrMap (mode : modes, modkeys, lhs, rhs) = do
     callctl $ "map-pointer" : show mode : parseMods modkeys : lhs : rhs
     setKeymap (modes, modkeys, lhs, rhs)
 
+-- | set a list of keymaps
 setKeymaps :: [Keymap] -> IO ()
 setKeymaps = traverse_ setKeymap
 
+-- | set a list of pointer maps
 setPtrMaps :: [Keymap] -> IO ()
 setPtrMaps = traverse_ setPtrMap
+
+-- | set keyboard repeat rate
+setRepeat :: Int -> Int -> IO ()
+setRepeat x y = callctl ["set-repeat", show x, show y]
+
+-- | set a window rule
+addRule :: Rule -> IO ()
+addRule (ruleType, glob, action) = callctl $ ["rule-add", show ruleType, glob] ++ actionToArgs action
+  where
+    actionToArgs (Tags x) = ["tags", show x]
+    actionToArgs (Output s) = ["output", s]
+    actionToArgs a = [show a]
+
+-- | set a list of window rules
+addRules :: [Rule] -> IO ()
+addRules = traverse_ addRule
