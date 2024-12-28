@@ -205,14 +205,6 @@ setPtrMap (mode : modes, modkeys, lhs, rhs) = do
     callctl $ "map-pointer" : show mode : parseMods modkeys : lhs : rhs
     setKeymap (modes, modkeys, lhs, rhs)
 
--- | set a list of keymaps
-setKeymaps :: [Keymap] -> IO ()
-setKeymaps = traverse_ setKeymap
-
--- | set a list of pointer maps
-setPtrMaps :: [Keymap] -> IO ()
-setPtrMaps = traverse_ setPtrMap
-
 -- | set keyboard repeat rate
 setRepeat :: Int -> Int -> IO ()
 setRepeat x y = callctl ["set-repeat", show x, show y]
@@ -225,6 +217,3 @@ addRule (ruleType, glob, action) = callctl $ ["rule-add", show ruleType, glob] +
     actionToArgs (Output s) = ["output", s]
     actionToArgs a = [show a]
 
--- | set a list of window rules
-addRules :: [Rule] -> IO ()
-addRules = traverse_ addRule

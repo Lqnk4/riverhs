@@ -2,9 +2,10 @@ module Main where
 
 import Riverctl
 import Prelude hiding (Left, Right)
+import Data.Foldable (traverse_)
 
 display :: String
-display = "ePD-1"
+display = "eDP-1"
 
 term :: String
 term = "alacritty"
@@ -76,6 +77,8 @@ keymaps =
     , ([N, L], "None", "XF86AudioPlay", spawn "playerctl play-pause")
     , ([N, L], "None", "XF86AudioPrev", spawn "playerctl previous")
     , ([N, L], "None", "XF86AudioNext", spawn "playerctl next")
+    , ([N, L], "None", "XF86MonBrightnessUp", spawn "light -A 5")
+    , ([N, L], "None", "XF86MonBrightnessDown", spawn "light -U 5")
     , -- screenshots
       ([N], "M", "P", spawn "grim -g \"$(slurp -d)\" - | swappy -f -")
     , ([N], "M-S", "P", spawn "grim - | swappy -f -")
@@ -92,9 +95,9 @@ ptrKeymaps =
     ]
 
 windowRules :: [Rule]
-windowRules = 
+windowRules =
     [ (AppID, "bar", CSD)
-    -- , (AppID, "zen-alpha", SSD)
+    , (AppID, "zen-alpha", SSD)
     , (AppID, "org.pwmt.zathura", SSD)
     , (AppID, "emacs", SSD)
     ]
@@ -102,15 +105,18 @@ windowRules =
 main :: IO ()
 main = do
     declareCustomModes customModes
-    setKeymaps keymaps
-    setKeymaps genTagMaps
-    setPtrMaps ptrKeymaps
-    addRules windowRules
-    setRepeat 50 300
+    traverse_ setKeymap keymaps
+    traverse_ setKeymap genTagMaps
+    traverse_ setPtrMap ptrKeymaps
+    traverse_ addRule windowRules
+    setKeyRepeat 50 300
 
+    callExternalShell "swaybg -i $HOME/Wallpapers/toradora_minimal_solarized.png"
     callExternal "waybar" []
-    callExternalShell "swayidle -w \
+    callExternalShell
+        "swayidle -w \
         \ timeout 500 'swaylock -f -c 000000' \
+        \ timeout 1000 'systemctl suspend' \
         \ before-sleep 'swaylock -f -c 000000'"
 
     callctl ["default-layout", "rivertile"]
