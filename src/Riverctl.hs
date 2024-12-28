@@ -206,8 +206,8 @@ setPtrMap (mode : modes, modkeys, lhs, rhs) = do
     setKeymap (modes, modkeys, lhs, rhs)
 
 -- | set keyboard repeat rate
-setRepeat :: Int -> Int -> IO ()
-setRepeat x y = callctl ["set-repeat", show x, show y]
+setKeyRepeat :: Int -> Int -> IO ()
+setKeyRepeat x y = callctl ["set-repeat", show x, show y]
 
 -- | set a window rule
 addRule :: Rule -> IO ()
