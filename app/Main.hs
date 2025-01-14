@@ -8,7 +8,7 @@ display :: String
 display = "eDP-1"
 
 term :: String
-term = "alacritty"
+term = "foot"
 
 browser :: String
 browser = "zen-browser"
@@ -54,10 +54,10 @@ keymaps =
     , ([N], "M-A-C", "J", snap Down)
     , ([N], "M-A-C", "K", snap Up)
     , ([N], "M-A-C", "L", snap Right)
-    , ([N], "M", "Left", mainLocation "left")
-    , ([N], "M", "Down", mainLocation "bottom")
-    , ([N], "M", "Up", mainLocation "top")
-    , ([N], "M", "Right", mainLocation "right")
+    , ([N], "M", "Left", mainLocation Left)
+    , ([N], "M", "Right", mainLocation Right)
+    , ([N], "M", "Up", mainLocation Up)
+    , ([N], "M", "Down", mainLocation Down)
     , -- resize views
       ([N], "M-A-S", "H", resize Horizontal (-100))
     , ([N], "M-A-S", "J", resize Vertical 100)
@@ -100,6 +100,7 @@ windowRules =
     , (AppID, "zen-alpha", SSD)
     , (AppID, "org.pwmt.zathura", SSD)
     , (AppID, "emacs", SSD)
+    , (AppID, "com.mitchellh.ghostty", SSD)
     ]
 
 main :: IO ()
@@ -115,9 +116,9 @@ main = do
     callExternal "waybar" []
     callExternalShell
         "swayidle -w \
-        \ timeout 500 'swaylock -f -c 000000' \
-        \ timeout 1000 'systemctl suspend' \
-        \ before-sleep 'swaylock -f -c 000000'"
+        \ timeout 500 'waylock -fork-on-lock' \
+        \ timeout 1000 'systemctl suspend'"
+    callExternal "wayland-pipewire-idle-inhibit" []
 
     callctl ["default-layout", "rivertile"]
     callExternal "rivertile" ["-view-padding", "0", "-outer-padding", "0"]

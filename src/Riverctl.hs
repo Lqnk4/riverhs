@@ -111,8 +111,14 @@ mainCount :: String -> [String]
 mainCount s = sendLayoutCmd $ "main-count " ++ s
 
 -- | change layout orientation
-mainLocation :: String -> [String]
-mainLocation s = sendLayoutCmd $ "main-location " ++ s
+mainLocation :: Direction -> [String]
+mainLocation dir =
+    sendLayoutCmd $
+        (++) "main-location " $ case dir of
+            Left -> "left"
+            Right -> "right"
+            Down -> "bottom"
+            Up -> "top"
 
 -- | move views
 move :: Direction -> Int -> [String]
@@ -172,6 +178,10 @@ callExternal p args = void $ createProcess (proc p args)
 callExternalShell :: String -> IO ()
 callExternalShell cmd = void $ createProcess (shell cmd)
 
+{- | declare modes in river ctl
+To add a custom mode, first make a constructor
+and then add an instance of show.
+-}
 declareCustomModes :: [Mode] -> IO ()
 declareCustomModes = traverse_ declareMode
   where
@@ -209,11 +219,22 @@ setPtrMap (mode : modes, modkeys, lhs, rhs) = do
 setKeyRepeat :: Int -> Int -> IO ()
 setKeyRepeat x y = callctl ["set-repeat", show x, show y]
 
+{- | set background color in the form of a hex string
+example: '0x002b36'
+-}
+setBackgroundColor :: String -> IO ()
+setBackgroundColor c = callctl ["background-color", c]
+
+-- | set border color in the form of a hex string
+setBorderColorFocused :: String -> IO ()
+setBorderColorFocused c = callctl ["border-color-focused", c]
+
+-- | set border color in the form of a hex string
+setBorderColorUnfocused :: String -> IO ()
+setBorderColorUnfocused c = callctl ["border-color-unfocused", c]
+
 -- | set a window rule
 addRule :: Rule -> IO ()
-addRule (ruleType, glob, action) = callctl $ ["rule-add", show ruleType, glob] ++ actionToArgs action
+addRule (ruleType, glob, ruleAction) = callctl $ ["rule-add", show ruleType, glob] ++ actionToArgs ruleAction
   where
-    actionToArgs (Tags x) = ["tags", show x]
-    actionToArgs (Output s) = ["output", s]
-    actionToArgs a = [show a]
-
+    actionToArgs = words . show
