@@ -213,7 +213,7 @@ setPtrMap :: Keymap -> IO ()
 setPtrMap ([], _, _, _) = return ()
 setPtrMap (mode : modes, modkeys, lhs, rhs) = do
     callctl $ "map-pointer" : show mode : parseMods modkeys : lhs : rhs
-    setKeymap (modes, modkeys, lhs, rhs)
+    setPtrMap (modes, modkeys, lhs, rhs)
 
 -- | set keyboard repeat rate
 setKeyRepeat :: Int -> Int -> IO ()

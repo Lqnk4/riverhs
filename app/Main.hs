@@ -30,7 +30,7 @@ keymaps =
       ([N], "M-S", "Return", spawn term)
     , ([N], "M", "G", spawn browser)
     , ([N], "M", "D", spawn launcher)
-    , ([N], "C", "Space", spawn fcitxToggle)
+    , ([N], "M-A-S", "Space", spawn fcitxToggle)
     , -- navigate views
       ([N], "M", "Return", zoom)
     , ([N], "M", "J", focusView Next)
