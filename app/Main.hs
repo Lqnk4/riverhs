@@ -11,7 +11,7 @@ term :: String
 term = "foot"
 
 browser :: String
-browser = "zen-browser"
+browser = "firefox"
 
 launcher :: String
 launcher = "fuzzel"
@@ -116,7 +116,7 @@ main = do
     callExternal "waybar" []
     callExternalShell
         "swayidle -w \
-        \ timeout 500 'waylock -fork-on-lock' \
+        \ timeout 500 'waylock -fork-on-lock -init-color 0x002b36 -input-color 0x6c71c4 -fail-color 0xdc322f' \
         \ timeout 1000 'systemctl suspend'"
     callExternal "wayland-pipewire-idle-inhibit" []
 

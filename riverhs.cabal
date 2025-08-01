@@ -19,7 +19,7 @@ library
     import: warnings
     exposed-modules: Riverctl
     build-depends:
-        base ^>=4.17.2.1,
+        base >=4.17.2.1,
         process >= 1.6.25.0
     hs-source-dirs:  src
     default-language: Haskell2010
@@ -29,7 +29,7 @@ executable riverhs
     import:           warnings
     main-is:          Main.hs
     build-depends:
-        base ^>=4.17.2.1,
+        base >=4.17.2.1,
         riverhs
     hs-source-dirs:   app
     default-language: Haskell2010
